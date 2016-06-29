@@ -10,35 +10,6 @@ from .utils import parse_date, is_valid_email, is_valid_cpf, is_valid_cnpj
 logger = logging.getLogger()
 
 
-class PagSeguroNotificationResponse(object):
-
-    def __init__(self, xml, config=None):
-        self.xml = xml
-        self.config = config or {}
-        self.errors = None
-        self.parse_xml(xml)
-
-    def __getitem__(self, key):
-        getattr(self, key, None)
-
-    def parse_xml(self, xml):
-        try:
-            parsed = xmltodict.parse(xml, encoding="iso-8859-1")
-        except Exception as e:
-            logger.debug(
-                "Cannot parse the returned xml '{0}' -> '{1}'".format(xml, e)
-            )
-            parsed = {}
-
-        if 'errors' in parsed:
-            self.errors = parsed['errors']['error']
-            return
-
-        transaction = parsed.get('transaction', {})
-        for k, v in transaction.iteritems():
-            setattr(self, k, v)
-
-
 class PagSeguroPreApprovalNotificationResponse(object):
 
     def __init__(self, xml, config=None):
@@ -97,6 +68,170 @@ class PagSeguroPreApprovalCancel(object):
             setattr(self, k, v)
 
 
+class PagSeguroPreApprovalPayment(object):
+
+    def __init__(self, xml, config=None):
+        self.xml = xml
+        self.config = config or {}
+        self.code = None
+        self.errors = None
+        logger.debug(self.__dict__)
+        self.parse_xml(xml)
+
+    def parse_xml(self, xml):
+        """ parse returned data """
+        try:
+            parsed = xmltodict.parse(xml, encoding="iso-8859-1")
+        except Exception as e:
+            logger.debug(
+                "Cannot parse the returned xml '{0}' -> '{1}'".format(xml, e)
+            )
+            parsed = {}
+
+        if 'errors' in parsed:
+            self.errors = parsed['errors']['error']
+            return
+
+        result = parsed.get('result', {})
+        self.code = result.get('transactionCode')
+        self.date = parse_date(result.get('date'))
+
+
+class PagSeguroPreApprovalRequest(object):
+
+    def __init__(self, xml, config=None):
+        self.xml = xml
+        self.config = config or {}
+        self.code = None
+        self.errors = None
+        logger.debug(self.__dict__)
+        self.parse_xml(xml)
+
+    def parse_xml(self, xml):
+        """ parse returned data """
+        try:
+            parsed = xmltodict.parse(xml, encoding="iso-8859-1")
+        except Exception as e:
+            logger.debug(
+                "Cannot parse the returned xml '{0}' -> '{1}'".format(xml, e)
+            )
+            parsed = {}
+
+        if 'errors' in parsed:
+            self.errors = parsed['errors']['error']
+            return
+
+        result = parsed.get('preApprovalRequest', {})
+        self.code = result.get('code')
+        self.date = parse_date(result.get('date'))
+
+
+class PagSeguroPreApproval(object):
+
+    def __init__(self, xml, config=None):
+        self.xml = xml
+        self.config = config or {}
+        self.errors = None
+        self.parse_xml(xml)
+
+    def __getitem__(self, key):
+        getattr(self, key, None)
+
+    def parse_xml(self, xml):
+        try:
+            parsed = xmltodict.parse(xml, encoding="iso-8859-1")
+        except Exception as e:
+            logger.debug(
+                "Cannot parse the returned xml '{0}' -> '{1}'".format(xml, e)
+            )
+            parsed = {}
+
+        result = parsed.get('preApproval', {})
+        self.name = result.get('name', None)
+        self.code = result.get('code', None)
+        self.date = parse_date(result.get('date'))
+        self.tracker = result.get('tracker', None)
+        self.status = result.get('status', None)
+        self.reference = result.get('reference', None)
+        self.last_event_date = result.get('lastEventDate', None)
+        self.charge = result.get('charge', None)
+        self.sender = result.get('sender', {})
+
+
+class PagSeguroPreApprovalSearch(object):
+
+    current_page = None
+    total_pages = None
+    results_in_page = None
+    pre_approvals = []
+
+    def __init__(self, xml, config=None):
+        self.xml = xml
+        self.config = config or {}
+        self.errors = None
+        self.parse_xml(xml)
+
+    def __getitem__(self, key):
+        getattr(self, key, None)
+
+    def parse_xml(self, xml):
+        try:
+            parsed = xmltodict.parse(xml, encoding="iso-8859-1")
+        except Exception as e:
+            logger.debug(
+                "Cannot parse the returned xml '{0}' -> '{1}'".format(xml, e)
+            )
+            parsed = {}
+
+        if 'errors' in parsed:
+            self.errors = parsed['errors']['error']
+            return
+
+        search_result = parsed.get('preApprovalSearchResult', {})
+        self.pre_approvals = search_result.get('preApprovals', {})
+        self.pre_approvals = self.pre_approvals.get('preApproval', [])
+        if not isinstance(self.pre_approvals, list):
+            self.pre_approvals = [self.pre_approvals]
+        self.current_page = search_result.get('currentPage', None)
+        if self.current_page is not None:
+            self.current_page = int(self.current_page)
+        self.results_in_page = search_result.get('resultsInThisPage', None)
+        if self.results_in_page is not None:
+            self.results_in_page = int(self.results_in_page)
+        self.total_pages = search_result.get('totalPages', None)
+        if self.total_pages is not None:
+            self.total_pages = int(self.total_pages)
+
+
+class PagSeguroNotificationResponse(object):
+
+    def __init__(self, xml, config=None):
+        self.xml = xml
+        self.config = config or {}
+        self.errors = None
+        self.parse_xml(xml)
+
+    def __getitem__(self, key):
+        getattr(self, key, None)
+
+    def parse_xml(self, xml):
+        try:
+            parsed = xmltodict.parse(xml, encoding="iso-8859-1")
+        except Exception as e:
+            logger.debug(
+                "Cannot parse the returned xml '{0}' -> '{1}'".format(xml, e)
+            )
+            parsed = {}
+
+        if 'errors' in parsed:
+            self.errors = parsed['errors']['error']
+            return
+
+        transaction = parsed.get('transaction', {})
+        for k, v in transaction.iteritems():
+            setattr(self, k, v)
+
+
 class PagSeguroCheckoutSession(object):
 
     def __init__(self, xml, config=None):
@@ -124,34 +259,6 @@ class PagSeguroCheckoutSession(object):
 
         session = parsed.get('session', {})
         self.session_id = session.get('id')
-
-
-class PagSeguroPreApprovalPayment(object):
-    def __init__(self, xml, config=None):
-        self.xml = xml
-        self.config = config or {}
-        self.code = None
-        self.errors = None
-        logger.debug(self.__dict__)
-        self.parse_xml(xml)
-
-    def parse_xml(self, xml):
-        """ parse returned data """
-        try:
-            parsed = xmltodict.parse(xml, encoding="iso-8859-1")
-        except Exception as e:
-            logger.debug(
-                "Cannot parse the returned xml '{0}' -> '{1}'".format(xml, e)
-            )
-            parsed = {}
-
-        if 'errors' in parsed:
-            self.errors = parsed['errors']['error']
-            return
-
-        result = parsed.get('result', {})
-        self.code = result.get('transactionCode')
-        self.date = parse_date(result.get('date'))
 
 
 class PagSeguroCheckoutResponse(object):
@@ -234,83 +341,6 @@ class PagSeguroTransactionSearchResult(object):
             self.total_pages = int(self.total_pages)
 
 
-class PagSeguroPreApproval(object):
-
-    def __init__(self, xml, config=None):
-        self.xml = xml
-        self.config = config or {}
-        self.errors = None
-        self.parse_xml(xml)
-
-    def __getitem__(self, key):
-        getattr(self, key, None)
-
-    def parse_xml(self, xml):
-        try:
-            parsed = xmltodict.parse(xml, encoding="iso-8859-1")
-        except Exception as e:
-            logger.debug(
-                "Cannot parse the returned xml '{0}' -> '{1}'".format(xml, e)
-            )
-            parsed = {}
-
-        result = parsed.get('preApproval', {})
-        self.name = result.get('name', None)
-        self.code = result.get('code', None)
-        self.date = parse_date(result.get('date'))
-        self.tracker = result.get('tracker', None)
-        self.status = result.get('status', None)
-        self.reference = result.get('reference', None)
-        self.last_event_date = result.get('lastEventDate', None)
-        self.charge = result.get('charge', None)
-        self.sender = result.get('sender', {})
-
-
-class PagSeguroPreApprovalSearch(object):
-
-    current_page = None
-    total_pages = None
-    results_in_page = None
-    pre_approvals = []
-
-    def __init__(self, xml, config=None):
-        self.xml = xml
-        self.config = config or {}
-        self.errors = None
-        self.parse_xml(xml)
-
-    def __getitem__(self, key):
-        getattr(self, key, None)
-
-    def parse_xml(self, xml):
-        try:
-            parsed = xmltodict.parse(xml, encoding="iso-8859-1")
-        except Exception as e:
-            logger.debug(
-                "Cannot parse the returned xml '{0}' -> '{1}'".format(xml, e)
-            )
-            parsed = {}
-
-        if 'errors' in parsed:
-            self.errors = parsed['errors']['error']
-            return
-
-        search_result = parsed.get('preApprovalSearchResult', {})
-        self.pre_approvals = search_result.get('preApprovals', {})
-        self.pre_approvals = self.pre_approvals.get('preApproval', [])
-        if not isinstance(self.pre_approvals, list):
-            self.pre_approvals = [self.pre_approvals]
-        self.current_page = search_result.get('currentPage', None)
-        if self.current_page is not None:
-            self.current_page = int(self.current_page)
-        self.results_in_page = search_result.get('resultsInThisPage', None)
-        if self.results_in_page is not None:
-            self.results_in_page = int(self.results_in_page)
-        self.total_pages = search_result.get('totalPages', None)
-        if self.total_pages is not None:
-            self.total_pages = int(self.total_pages)
-
-
 class PagSeguro(object):
     """ Pag Seguro V2 wrapper """
 
@@ -340,6 +370,7 @@ class PagSeguro(object):
         self.abandon_url = None
         self.credit_card = {}
         self.pre_approval = {}
+        self.sender_address = {}
         self.checkout_session = None
         self.payment = {}
 
@@ -437,6 +468,20 @@ class PagSeguro(object):
             params['preApprovalFinalDate']= self.pre_approval.get('final_date')
             params['preApprovalMaxTotalAmount'] = self.pre_approval.get('max_total_amount')
 
+        if self.sender_address:
+            params['senderAddressStreet'] = self.shipping.get('street')
+            params['senderAddressNumber'] = self.shipping.get('number')
+            params['senderAddressComplement'] = self.shipping.get(
+                'complement'
+            )
+            params['senderAddressDistrict'] = self.shipping.get('district')
+            params['senderAddressPostalCode'] = self.shipping.get(
+                'postal_code'
+            )
+            params['senderAddressCity'] = self.shipping.get('city')
+            params['senderAddressState'] = self.shipping.get('state')
+            params['senderAddressCountry'] = self.shipping.get('country',
+                                                                 'BRA')
         self.data.update(params)
         self.clean_none_params()
 
@@ -522,6 +567,12 @@ class PagSeguro(object):
         self.build_pre_approval_payment_params(**kwargs)
         response = self.post(url=self.config.PRE_APPROVAL_PAYMENT_URL)
         return PagSeguroPreApprovalPayment(response.content, self.config)
+
+    def pre_approval_request(self, **kwargs):
+        """ create a pagseguro checkout """
+        self.build_checkout_params(**kwargs)
+        response = self.post(url=self.config.PRE_APPROVAL_REQUEST_URL)
+        return PagSeguroPreApprovalRequest(response.content, config=self.config)
 
     def pre_approval_cancel(self, code):
         """ cancel a subscribe """
